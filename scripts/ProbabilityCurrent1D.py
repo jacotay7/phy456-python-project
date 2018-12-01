@@ -176,7 +176,7 @@ class PIB(QuantumSystem1D):
         self.generate_initial_cn(n)
         
 """
-Class: PIB
+Class: SHO
 Parent: QuantumSystem1D
 
 Purpose: A particle in a simple harmonic osccilator potential

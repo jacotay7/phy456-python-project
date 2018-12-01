@@ -54,48 +54,66 @@ Methods:
 
 class QuantumSystem3D(ABC):
 
-    def __init__(self, L, M, N=250, name=''):
-        self.coords = CoordinateField3D(L, np.pi, 2*np.pi, N, N, N)
-
+    def __init__(self, L, M, N=250, name='', realdim=True):
+        self.M = M
+        self.L = L
+        self.N = N
         self.name = name
+        self.realdim = realdim
         return
 
     def normalize(self, psi):
-        norm = np.trapz(np.abs(psi)**2, x=self.x)
+        norm = np.sum(psi)*psi.volume_element
         return psi/sqrt(norm)
 
-    def psi_conj(self, t):
-        return np.conj(self.psi(t))
+    def psi_conj(self):
+        psi_conj = self.psi.copy()
+        psi_conj.data = np.conj(self.psi.data)
+        return psi_conj
 
-    def psi_squared(self, t):
-        return np.abs(self.psi(t))**2
+    def psi_squared(self):
+        return np.abs(self.psi)**2
 
-    def psi(self, t):
-        psi_t = np.zeros_like(self.x, dtype=np.complex128)
-        for i in range(self.cn.size):
-            psi_t += self.cn[i]*np.exp(-1j*self.En[i]
-                                       * t/hbar)*self.eigenstates[i, :]
-        return self.normalize(psi_t)
+    def gradient(self, psi):
+        def grad_func(x,y,z, psi):
+            psi_grad = np.empty((x.shape[0], x.shape[1], x.shape[2], 3), np.complex128)
+            volume_element = [x[1,0,0] - x[0,0,0], y[1,0,0] - y[0,0,0], z[1,0,0] - z[0,0,0]]
 
-    def derivative(self, psi_t):
-        dx = self.x[1] - self.x[0]
-        psi_x = np.empty_like(psi_t)
-        psi_x[0] = (psi_t[1] - psi_t[0])/(dx)
-        psi_x[-1] = (psi_t[-1] - psi_t[-2])/(dx)
-        psi_x[1:-1] = (psi_t[2:] - psi_t[:-2])/(2*dx)
-        return psi_x
+            i = 0
+            dv = volume_element[i]
+            print(dv)
+            psi_grad[0,:,:,i] = (psi[1,:,:] - psi[0,:,:])/(dv)
+            psi_grad[-1,:,:,i] = (psi[-1,:,:] - psi[-2,:,:])/(dv)
+            psi_grad[1:-1,:,:,i] = (psi[2:,:,:] - psi[:-2,:,:])/(2*dv)
 
-    def probability_current(self, t):
-        psi_t = self.psi(t)
-        psi_t_conj = np.conj(psi_t)
+            i = 1
+            dv = volume_element[i]
+            psi_grad[:,0,:,i] = (psi[:,1,:] - psi[:,0,:])/(dv)
+            psi_grad[:,-1,:,i] = (psi[:,-1,:] - psi[:,-2,:])/(dv)
+            psi_grad[:,1:-1,:,i] = (psi[:,2:,:] - psi[:,:-2,:])/(2*dv)
+
+            i = 2
+            dv = volume_element[i]
+            psi_grad[:,:,0,i] = (psi[:,:,1] - psi[:,:,0])/(dv)
+            psi_grad[:,:,-1,i] = (psi[:,:,-1] - psi[:,:,-2])/(dv)
+            psi_grad[:,:,1:-1,i] = (psi[:,:,2:] - psi[:,:,:-2])/(2*dv)
+
+            return psi_grad
+        psi_grad = CoordinateField3D(self.L,self.L,self.L,self.N,self.N,self.N)
+        psi_grad.fillContainer(grad_func, (psi.data,))
+        return psi_grad
+
+    def find_probability_current(self):
+        psi_conj = self.psi_conj
+        psi_grad = self.gradient(self.psi)
         A = hbar/(2*self.M*1j)
-        term1 = psi_t_conj*self.derivative(psi_t)
-        term2 = psi_t*self.derivative(psi_t_conj)
+        term1 = psi_conj.data*psi_grad.data
+        term2 = self.psi.data*self.gradient(psi_conj).data
         J = A*(term1-term2)
-        return J.real
+        self.J = J.real
 
     @abstractmethod
-    def get_wavefunction(self, n, l, m, realdim=False):
+    def set_wavefunction(self, n, l, m, realdim=False):
         pass
 
 
@@ -114,22 +132,13 @@ Methods:
 
 class HydrogenAtom(QuantumSystem3D):
 
-    def __init__(self, L, M, N=250):
-        QuantumSystem3D.__init__(self, L, M, N=N, name="HydrogenAtom")
+    def __init__(self, L, N=250, realdim=True):
+        QuantumSystem3D.__init__(self, L, m_e, N=N, name="HydrogenAtom", realdim=True)
         return
 
-    def generate_eigenstates(self, n):
-
-        self.eigenstates = np.zeros((n, self.x.size), dtype=np.complex128)
-        self.En = (np.arange(1, n+1)*np.pi*hbar/self.L)**2/(2*self.M)
-        for i in range(n):
-            pre_factor = sqrt(2/self.L)
-            self.eigenstates[i, :] = pre_factor*np.sin((i+1)*np.pi/L*self.x)
-        self.generate_initial_cn(n)
-
-    def get_wavefunction(self, n, l, m, realdim=False):
+    def set_wavefunction(self, n, l, m):
         # real dimensions for the reduced Bohr radius
-        if realdim:
+        if self.realdim:
             a_0 = (4.0 * np.pi * epsilon_0 * hbar**2) / (m_e * e**2)
         else:
             a_0 = 1
@@ -138,16 +147,19 @@ class HydrogenAtom(QuantumSystem3D):
         C = np.sqrt((2)/(n * a_0)**3 * factorial(n-l-1) /
                     (2 * n * factorial(n+l)))
 
-        # radial component
-        def R(r):
-            rho = (2 * r) / (n * a_0)
-            return np.exp(-rho/2) * (rho ** l) * genlaguerre(n-l-1, 2*l+1)(rho)
-
         # putting it together
-        def psi(r, theta, phi):
-            return sph_harm(m, l, theta, phi)
+        def Psi(r, theta, phi):
+            # radial component
+            def R(r):
+                rho = (2 * r) / (n * a_0)
+                return np.exp(-rho/2) * (rho ** l) * genlaguerre(n-l-1, 2*l+1)(rho)
+            print(theta,phi)
+            return R(r)*sph_harm(m, l,theta, phi)
 
-        return psi
+        psi = CoordinateField3D(self.L, self.L, self.L, self.N, self.N, self.N)
+        psi.fillContainer(Psi, (), coordinate_system = "SPHERICAL")
+        self.psi = psi
+        return
 
 
 """
@@ -171,10 +183,21 @@ def isqrt(x):
 
 
 if __name__ == "__main__":
-    h = HydrogenAtom(10, 10)
-    g = h.get_wavefunction(3, 2, 1)
 
-    # plot wavefunction in xz-plane
+
+    L = 10 * (4.0 * np.pi * epsilon_0 * hbar**2) / (m_e * e**2)
+    #Initialize Particle
+    particle = HydrogenAtom(L)
+    #Initialize Eigenstate
+    particle.set_wavefunction(2, 1, 1)
+    print(particle.psi.data)
+
+
+    #Compute J
+    #particle.find_probability_current()
+    #Plot
+    print(sph_harm(1, 1, particle.psi.theta, particle.psi.phi))
+    """   # plot wavefunction in xz-plane
     x = np.linspace(-5, 5)
     z = np.linspace(-5, 5)
 
@@ -184,7 +207,7 @@ if __name__ == "__main__":
     theta = np.arctan2(Z, X)
 
     phi = np.zeros(theta.shape)
-    P = np.abs(g(R, theta, phi))**2
+    P = np.abs(g(R, theta, phi))**2"""
 
-    plt.imshow(np.abs(sph_harm(1, 2, theta, phi))**2, extent=[0, 1, 0, 1])
+    plt.imshow(np.abs(particle.psi.data[:,:,0])**2)
     plt.show()

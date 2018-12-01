@@ -161,7 +161,7 @@ class HydrogenAtom(QuantumSystem3D):
             def R(r):
                 rho = (2 * r) / (n * a_0)
                 return np.exp(-rho/2) * (rho ** l) * genlaguerre(n-l-1, 2*l+1)(rho)
-            return C*R(r)*sph_harm(m, l,theta, phi)
+            return C*R(r)*sph_harm(m, l, phi,  theta)
 
         psi = CoordinateField3D(self.L, self.L, self.L, self.N, self.N, self.N)
         psi.fillContainer(Psi, (), coordinate_system="SPHERICAL")
@@ -175,15 +175,28 @@ if __name__ == "__main__":
     # Initialize Particle
     particle = HydrogenAtom(L)
     #Initialize Eigenstate
-    particle.set_wavefunction(2, 1, 1)
+    particle.set_wavefunction(2, 1, 0)
     #Compute J
     particle.find_probability_current()
     #Plot
     #print(particle.J)
-    im = particle.psi_squared().data
-    plt.imshow(im[:,:,im.shape[2]//2])
-    plt.show()
-    plt.imshow(im[:,im.shape[1]//2,:])
-    plt.show()
-    plt.imshow(im[im.shape[0]//2,:,:])
-    plt.show()
+    fig, ax = plt.subplots()
+    im = particle.J_mag
+    im2 = ax.imshow(im[:,:,im.shape[2]//2])
+    #plt.show()
+    #plt.imshow(im[:,im.shape[1]//2,:])
+    #plt.show()
+    #plt.imshow(im[im.shape[0]//2,:,:])
+    #plt.show()
+
+
+    def animate(i):
+        #im = im2.get_array()
+        #print(im.shape)
+        k = int(i*im.shape[2]/20)
+        im2.set_array(im[:,:,k])
+        #Update animation text
+        return im2,
+    
+anim = animation.FuncAnimation(fig, animate, frames=20, blit=True)
+plt.show()

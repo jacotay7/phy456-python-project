@@ -78,18 +78,3 @@ class CoordinateField3D:
             self.L[0], self.L[1], self.L[2], self.N[0], self.N[1], self.N[2], gridType=self.gridType)
         copy.data = self.data
         return copy
-
-
-class VectorField3D(CoordinateField3D):
-
-    def __init__(self, L1, L2, L3, N1, N2, N3, gridType="SPHERICAL"):
-
-        CoordinateField3D.__init__(
-            self, L1, L2, L3, N1, N2, N3, gridType="SPHERICAL")
-
-
-class ScalarField3D(CoordinateField3D):
-    def __init__(self, L1, L2, L3, N1, N2, N3, gridType="SPHERICAL"):
-
-        CoordinateField3D.__init__(
-            self, L1, L2, L3, N1, N2, N3, gridType="SPHERICAL")

@@ -89,7 +89,6 @@ class VectorField3D(CoordinateField3D):
 
 
 class ScalarField3D(CoordinateField3D):
-
     def __init__(self, L1, L2, L3, N1, N2, N3, gridType="SPHERICAL"):
 
         CoordinateField3D.__init__(

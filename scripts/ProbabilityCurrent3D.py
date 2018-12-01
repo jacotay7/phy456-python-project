@@ -1,11 +1,16 @@
+from abc import ABC, abstractmethod
 from math import sqrt
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.polynomial.hermite import hermval
-from scipy.constants import hbar
+from scipy.constants import e, epsilon_0, hbar, m_e
 from scipy.fftpack import dst, idst
+from scipy.misc import factorial
+from scipy.special import genlaguerre, sph_harm
+
+from CoordinateField3D import CoordinateField3D
 
 plt.rcParams["animation.html"] = "jshtml"
 
@@ -47,16 +52,11 @@ Methods:
 """
 
 
-class QuantumSystem3D:
+class QuantumSystem3D(ABC):
 
     def __init__(self, L, M, N=250, name=''):
-        self.x = np.linspace(0, L, N)
-        self.y = np.linspace(0, L, N)
-        self.z = np.linspace(0, L, N)
+        self.coords = CoordinateField3D(L, np.pi, 2*np.pi, N, N, N)
 
-        self.N = N
-        self.M = M
-        self.L = L
         self.name = name
         return
 
@@ -94,6 +94,10 @@ class QuantumSystem3D:
         J = A*(term1-term2)
         return J.real
 
+    @abstractmethod
+    def get_wavefunction(self, n, l, m, realdim=False):
+        pass
+
 
 """
 Class: HydrogenAtom
@@ -123,6 +127,28 @@ class HydrogenAtom(QuantumSystem3D):
             self.eigenstates[i, :] = pre_factor*np.sin((i+1)*np.pi/L*self.x)
         self.generate_initial_cn(n)
 
+    def get_wavefunction(self, n, l, m, realdim=False):
+        # real dimensions for the reduced Bohr radius
+        if realdim:
+            a_0 = (4.0 * np.pi * epsilon_0 * hbar**2) / (m_e * e**2)
+        else:
+            a_0 = 1
+
+        # normalization
+        C = np.sqrt((2)/(n * a_0)**3 * factorial(n-l-1) /
+                    (2 * n * factorial(n+l)))
+
+        # radial component
+        def R(r):
+            rho = (2 * r) / (n * a_0)
+            return np.exp(-rho/2) * (rho ** l) * genlaguerre(n-l-1, 2*l+1)(rho)
+
+        # putting it together
+        def psi(r, theta, phi):
+            return sph_harm(m, l, theta, phi)
+
+        return psi
+
 
 """
 A function to compute the square root of large integers
@@ -145,10 +171,20 @@ def isqrt(x):
 
 
 if __name__ == "__main__":
-    # Constants
-    L = 1e-8  # m
-    x0 = L/2
-    sigma = 2e-10  # m
-    kappa = 5e10  # m^-1
-    M = 9.109e-31
-    n = 500
+    h = HydrogenAtom(10, 10)
+    g = h.get_wavefunction(3, 2, 1)
+
+    # plot wavefunction in xz-plane
+    x = np.linspace(-5, 5)
+    z = np.linspace(-5, 5)
+
+    X, Z = np.meshgrid(x, z)
+
+    R = np.sqrt(X**2 + Z**2)
+    theta = np.arctan2(Z, X)
+
+    phi = np.zeros(theta.shape)
+    P = np.abs(g(R, theta, phi))**2
+
+    plt.imshow(np.abs(sph_harm(1, 2, theta, phi))**2, extent=[0, 1, 0, 1])
+    plt.show()

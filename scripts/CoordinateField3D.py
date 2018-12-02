@@ -54,7 +54,6 @@ class CoordinateField3D:
             self.r, self.theta, self.phi = self.cart2sphere()
 
     def sphere2cart(self):
-
         x, y, z = self.r*np.sin(self.theta)*np.cos(self.phi), self.r * \
             np.sin(self.theta)*np.sin(self.phi), self.r*np.cos(self.theta)
         return x, y, z

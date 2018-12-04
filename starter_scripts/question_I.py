@@ -242,6 +242,9 @@ class SHO(QuantumSystem1D):
         
         """
         Student can complete for extra credit
+
+        Requirements: Should be analogous to the Particle in
+        a box implementation. 
         """
         
 """

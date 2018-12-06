@@ -231,7 +231,7 @@ particle.generate_eigenstates(n)
 particle.create_animation(0, 2e-15, frames = 100)
 ani = particle.create_animation(0, 2e-15, frames = 100)
 #Uncomment to save as a video file
-ani.save('PIB.gif', dpi=80, writer='imagemagick')
+#ani.save('PIB.gif', dpi=80, writer='imagemagick')
 plt.show()
 
 #Number of eigensates used (any higher and the hermite polynomials have problems)
@@ -245,5 +245,5 @@ particle.generate_eigenstates(n)
 #Plot a few times
 ani = particle.create_animation(0, 2e-15, frames = 100)
 #Uncomment to save as a video file
-ani.save('SHO.gif', dpi=80, writer='imagemagick')
+#ani.save('SHO.gif', dpi=80, writer='imagemagick')
 plt.show()

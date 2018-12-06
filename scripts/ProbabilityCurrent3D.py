@@ -206,19 +206,24 @@ if __name__ == "__main__":
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         s = 15  # down-sample a bit
-        ax.quiver(particle.psi.x[::s, ::s, ::s],
-                  particle.psi.y[::s, ::s, ::s],
-                  particle.psi.z[::s, ::s, ::s],
+        ax.quiver(particle.psi.x[::s, ::s, ::s]/a_0,
+                  particle.psi.y[::s, ::s, ::s]/a_0,
+                  particle.psi.z[::s, ::s, ::s]/a_0,
                   particle.J[::s, ::s, ::s, 0],
                   particle.J[::s, ::s, ::s, 1],
                   particle.J[::s, ::s, ::s, 2],
-                  length=2*a_0/np.max(particle.J[:]),
+                  length=2/np.max(particle.J[:]),
                   normalize=False)
 
         # crop image a bit, might want to change this
-        ax.set_xlim3d(-L/4, L/4)
-        ax.set_ylim3d(-L/4, L/4)
-        ax.set_xlim3d(-L/4, L/4)
+        ax.set_xlim3d(-L/a_0/4, L/a_0/4)
+        ax.set_ylim3d(-L/a_0/4, L/a_0/4)
+        ax.set_xlim3d(-L/a_0/4, L/a_0/4)
+
+        ax.set_title("Probability Current of Hydrogen 2, 1, 1 State")
+        ax.set_xlabel("x (a_0) =>")
+        ax.set_ylabel("y (a_0) =>")
+        ax.set_zlabel("z (a_0) =>")
 
         plt.show()
 

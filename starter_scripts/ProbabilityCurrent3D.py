@@ -49,7 +49,6 @@ Methods:
         - start: the starting time for the animation
         - end: the ending time of the animation
         - frames: the number of frames in the animation
-    rotate_coords: rotates coordinates around 
 
 """
 
@@ -65,8 +64,13 @@ class QuantumSystem3D(ABC):
         return
 
     def normalize(self):
-        norm = np.sum(self.psi.data)*psi.volume_element
-        self.psi.data /= sqrt(norm)
+        '''
+        Student must complete
+        
+        Requirements: Write a function to normalize the 1D array, psi_t,
+        representing the wavefunction at time t. This function should return
+        the normalized array. Hint: Integrate the absolute square
+        '''
         return psi/sqrt(norm)
 
     def psi_conj(self):
@@ -81,29 +85,15 @@ class QuantumSystem3D(ABC):
 
     def gradient(self, psi):
         def grad_func(x, y, z, psi):
-            psi_grad = np.empty(
-                (x.shape[0], x.shape[1], x.shape[2], 3), np.complex128)
-            volume_element = [x[1, 0, 0] - x[0, 0, 0],
-                              y[0, 1, 0] - y[0, 0, 0], z[0, 0, 1] - z[0, 0, 0]]
-
-            i = 0
-            dv = volume_element[i]
-            psi_grad[0, :, :, i] = (psi[1, :, :] - psi[0, :, :])/(dv)
-            psi_grad[-1, :, :, i] = (psi[-1, :, :] - psi[-2, :, :])/(dv)
-            psi_grad[1:-1, :, :, i] = (psi[2:, :, :] - psi[:-2, :, :])/(2*dv)
-
-            i = 1
-            dv = volume_element[i]
-            psi_grad[:, 0, :, i] = (psi[:, 1, :] - psi[:, 0, :])/(dv)
-            psi_grad[:, -1, :, i] = (psi[:, -1, :] - psi[:, -2, :])/(dv)
-            psi_grad[:, 1:-1, :, i] = (psi[:, 2:, :] - psi[:, :-2, :])/(2*dv)
-
-            i = 2
-            dv = volume_element[i]
-            psi_grad[:, :, 0, i] = (psi[:, :, 1] - psi[:, :, 0])/(dv)
-            psi_grad[:, :, -1, i] = (psi[:, :, -1] - psi[:, :, -2])/(dv)
-            psi_grad[:, :, 1:-1, i] = (psi[:, :, 2:] - psi[:, :, :-2])/(2*dv)
-
+            """
+            Student Must Complete
+            
+            Requirements: Write a function which takes a 3D gradient using a generalized 
+            central differences method. Note that x, y, and z are meshgrid arrays 
+            specifying the coordinate inputs.  The function should return a 3D meshgrid
+            populated with vector field array instead of numbers (i.e. a 4D meshgrid).
+            Be careful with boundary points!
+            """
             return psi_grad
         psi_grad = CoordinateField3D(
             self.L, self.L, self.L, self.N, self.N, self.N)
@@ -111,20 +101,17 @@ class QuantumSystem3D(ABC):
         return psi_grad
 
     def find_probability_current(self):
-        psi_conj = self.psi_conj()
-        psi_grad = self.gradient(self.psi)
-        psi_conj_grad = self.gradient(psi_conj)
-        A = hbar/(2*self.M*1j)
-        term1, term2 = np.empty_like(
-            psi_grad.data), np.empty_like(psi_grad.data)
-        for i in range(3):
-            term1[:, :, :, i] = psi_conj.data*psi_grad.data[:, :, :, i]
-            term2[:, :, :, i] = self.psi.data*psi_conj_grad.data[:, :, :, i]
-        J = A*(term1-term2)
-        self.J = J.real
-        self.J_mag = np.sqrt(
-            self.J[:, :, :, 0]**2 + self.J[:, :, :, 1]**2 + self.J[:, :, :, 2]**2)
-            
+        """
+        Student must complete
+        
+        Requirements: Write a function to compute the probability current
+        of the psi. Hint: re-use code whenever possible, if the above functions
+        have been written corectly, this should not take long to complete. Save
+        the array as a property of the system (self.J).  Save the magnitude as a 
+        3D meshgrid array populated with scalar (self.J_mag).
+        Hint: J should be real. Complex number may be due to rounding error and can be neglected
+        """
+
     @abstractmethod
     def set_wavefunction(self, n, l, m, realdim=False):
         pass
@@ -151,10 +138,6 @@ class HydrogenAtom(QuantumSystem3D):
         return
 
     def set_wavefunction(self, n, l, m):
-        self.n = n
-        self.l = l
-        self.m = m
-        
         # real dimensions for the reduced Bohr radius
         if self.realdim:
             a_0 = (4.0 * np.pi * epsilon_0 * hbar**2) / (m_e * e**2)
@@ -177,6 +160,7 @@ class HydrogenAtom(QuantumSystem3D):
         psi.fillContainer(Psi, (), coordinate_system="SPHERICAL")
         self.psi = psi
         return
+
 
 if __name__ == "__main__":
     a_0 = (4.0 * np.pi * epsilon_0 * hbar**2) / (m_e * e**2)
@@ -207,29 +191,14 @@ if __name__ == "__main__":
         return im2,
 
     def plot_quiver():
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-        s = 15  # down-sample a bit
-        ax.quiver(particle.psi.x[::s, ::s, ::s]/a_0,
-                  particle.psi.y[::s, ::s, ::s]/a_0,
-                  particle.psi.z[::s, ::s, ::s]/a_0,
-                  particle.J[::s, ::s, ::s, 0],
-                  particle.J[::s, ::s, ::s, 1],
-                  particle.J[::s, ::s, ::s, 2],
-                  length=2/np.max(particle.J[:]),
-                  normalize=False)
-
-        # crop image a bit, might want to change this
-        ax.set_xlim3d(-L/a_0/4, L/a_0/4)
-        ax.set_ylim3d(-L/a_0/4, L/a_0/4)
-        ax.set_xlim3d(-L/a_0/4, L/a_0/4)
-
-        ax.set_title("Probability Current of Hydrogen 2, 1, 1 State")
-        ax.set_xlabel("x (a_0) =>")
-        ax.set_ylabel("y (a_0) =>")
-        ax.set_zlabel("z (a_0) =>")
-
-        plt.show()
+        """
+        Student must complete
+        
+        Requirements: Write a function to plot particl.J against its coordinates.
+        You can reuse your plotting code from the analytical plots.
+        Hint:  you will need to use python's slice notation to undersample,
+        or else the program run time will be too long
+        """
 
     # anim = animation.FuncAnimation(fig, animate, frames=20, blit=True)
     # plt.show()

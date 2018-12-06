@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.linalg as linalg
 from mpl_toolkits.mplot3d import axes3d
 
 
@@ -71,9 +72,15 @@ class CoordinateField3D:
             self.data = func(self.r, self.theta, self.phi, *func_args)
         else:
             print("Unrecognised Co-ordinate System")
+    
 
     def copy(self):
         copy = CoordinateField3D(
             self.L[0], self.L[1], self.L[2], self.N[0], self.N[1], self.N[2], gridType=self.gridType)
         copy.data = self.data
         return copy
+
+
+#This code only runs if you run this script directly
+if __name__ == "__main__":
+    test = CoordinateField3D(1,1,1,2,2,2, gridType = "RECTANGULAR")

@@ -178,7 +178,6 @@ class HydrogenAtom(QuantumSystem3D):
         self.psi.x, self.psi.y, self.psi.z = self.psi.rotate_coords(k, -theta)
         self.psi.r , self.psi.theta, self.psi.phi = cart2sphere()
         psi.fillContainer(Psi, (), coordinate_system="SPHERICAL")
-        self.psi = psi
         return
 
 

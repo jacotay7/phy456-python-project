@@ -177,6 +177,36 @@ class HydrogenAtom(QuantumSystem3D):
         psi.fillContainer(Psi, (), coordinate_system="SPHERICAL")
         self.psi = psi
         return
+    
+    def rotate(self, k, theta):
+        n = self.n
+        l = self.l
+        m = self.m
+        
+        # real dimensions for the reduced Bohr radius
+        if self.realdim:
+            a_0 = (4.0 * np.pi * epsilon_0 * hbar**2) / (m_e * e**2)
+        else:
+            a_0 = 1
+
+        # normalization
+        C = np.sqrt((2)/(n * a_0)**3 * factorial(n-l-1) /
+                    (2 * n * factorial(n+l)))
+
+        # putting it together
+        def Psi(r, theta, phi):
+            # radial component
+            def R(r):
+                rho = (2 * r) / (n * a_0)
+                return np.exp(-rho/2) * (rho ** l) * genlaguerre(n-l-1, 2*l+1)(rho)
+            return C*R(r)*sph_harm(m, l, phi,  theta)
+        
+        
+        self.psi.x, self.psi.y, self.psi.z = self.psi.rotate_coords(k, -theta)
+        self.psi.r , self.psi.theta, self.psi.phi = self.psi.cart2sphere()
+        self.psi.fillContainer(Psi, (), coordinate_system="SPHERICAL")
+        return
+
 
 if __name__ == "__main__":
     a_0 = (4.0 * np.pi * epsilon_0 * hbar**2) / (m_e * e**2)
@@ -185,6 +215,8 @@ if __name__ == "__main__":
     particle = HydrogenAtom(L)
     # Initialize Eigenstate
     particle.set_wavefunction(2, 1, 1)
+    #rotate
+    particle.rotate([0,1,0], np.pi/2)
     # Compute J
     particle.find_probability_current()
     # Plot
@@ -210,24 +242,19 @@ if __name__ == "__main__":
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         s = 15  # down-sample a bit
-        ax.quiver(particle.psi.x[::s, ::s, ::s]/a_0,
-                  particle.psi.y[::s, ::s, ::s]/a_0,
-                  particle.psi.z[::s, ::s, ::s]/a_0,
+        ax.quiver(particle.psi.x[::s, ::s, ::s],
+                  particle.psi.y[::s, ::s, ::s],
+                  particle.psi.z[::s, ::s, ::s],
                   particle.J[::s, ::s, ::s, 0],
                   particle.J[::s, ::s, ::s, 1],
                   particle.J[::s, ::s, ::s, 2],
-                  length=2/np.max(particle.J[:]),
+                  length=2*a_0/np.max(particle.J[:]),
                   normalize=False)
 
         # crop image a bit, might want to change this
-        ax.set_xlim3d(-L/a_0/4, L/a_0/4)
-        ax.set_ylim3d(-L/a_0/4, L/a_0/4)
-        ax.set_xlim3d(-L/a_0/4, L/a_0/4)
-
-        ax.set_title("Probability Current of Hydrogen 2, 1, 1 State")
-        ax.set_xlabel("x (a_0) =>")
-        ax.set_ylabel("y (a_0) =>")
-        ax.set_zlabel("z (a_0) =>")
+        ax.set_xlim3d(-L/4, L/4)
+        ax.set_ylim3d(-L/4, L/4)
+        ax.set_xlim3d(-L/4, L/4)
 
         plt.show()
 

@@ -124,7 +124,7 @@ class QuantumSystem3D(ABC):
         self.J = J.real
         self.J_mag = np.sqrt(
             self.J[:, :, :, 0]**2 + self.J[:, :, :, 1]**2 + self.J[:, :, :, 2]**2)
-
+            
     @abstractmethod
     def set_wavefunction(self, n, l, m, realdim=False):
         pass
@@ -173,6 +173,13 @@ class HydrogenAtom(QuantumSystem3D):
         psi.fillContainer(Psi, (), coordinate_system="SPHERICAL")
         self.psi = psi
         return
+    
+    def rotate(self, k, theta):
+        self.psi.x, self.psi.y, self.psi.z = self.psi.rotate_coords(k, -theta)
+        self.psi.r , self.psi.theta, self.psi.phi = cart2sphere()
+        psi.fillContainer(Psi, (), coordinate_system="SPHERICAL")
+        self.psi = psi
+        return
 
 
 if __name__ == "__main__":
@@ -180,6 +187,7 @@ if __name__ == "__main__":
     L = 20 * a_0
     # Initialize Particle
     particle = HydrogenAtom(L)
+    particle.rotate([0,1,0], np.pi/2)
     # Initialize Eigenstate
     particle.set_wavefunction(2, 1, 1)
     # Compute J

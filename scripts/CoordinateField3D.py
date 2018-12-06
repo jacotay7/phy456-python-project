@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.linalg as linalg
 from mpl_toolkits.mplot3d import axes3d
 
 
@@ -73,12 +74,14 @@ class CoordinateField3D:
             print("Unrecognised Co-ordinate System")
     
     def rotate_coords(self, k, theta):
-        k = k/np.abs(k) #normalize
+        k = k/linalg.norm(k) #normalize
         
-        v = np.stack(self.x, self.y, self.z, 3)
-        v_prime = v*np.cos(theta) + np.cross(k, v)*sin(theta) + k*np.dot(k, v)*(1-cos(theta))
+        v = np.stack((self.x, self.y, self.z), axis = 3)
         
+        tmp = np.dot(v,k)
+        v_prime = v*np.cos(theta) + np.cross(k, v)*np.sin(theta) + np.stack((k[0]*tmp, k[1]*tmp, k[2]*tmp), axis = 3)*(1-np.cos(theta))
         
+        x_prime, y_prime, z_prime = v_prime[:,:,:,0], v_prime[:,:,:,1], v_prime[:,:,:,2]
         
         return x_prime, y_prime, z_prime
 
@@ -87,3 +90,8 @@ class CoordinateField3D:
             self.L[0], self.L[1], self.L[2], self.N[0], self.N[1], self.N[2], gridType=self.gridType)
         copy.data = self.data
         return copy
+
+
+#This code only runs if you run this script directly
+if __name__ == "__main__":
+    test = CoordinateField3D(1,1,1,2,2,2, gridType = "RECTANGULAR")

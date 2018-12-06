@@ -71,6 +71,16 @@ class CoordinateField3D:
             self.data = func(self.r, self.theta, self.phi, *func_args)
         else:
             print("Unrecognised Co-ordinate System")
+    
+    def rotate_coords(self, k, theta):
+        k = k/np.abs(k) #normalize
+        
+        v = np.stack(self.x, self.y, self.z, 3)
+        v_prime = v*np.cos(theta) + np.cross(k, v)*sin(theta) + k*np.dot(k, v)*(1-cos(theta))
+        
+        
+        
+        return x_prime, y_prime, z_prime
 
     def copy(self):
         copy = CoordinateField3D(
